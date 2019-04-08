@@ -54,16 +54,18 @@ int send_response(int fd, char *header, char *content_type, void *body, int cont
     char response[max_response_size];
 
     // Build HTTP response and store it in response
+    // setting up variables for later use
     time_t rawtime;
     struct tm *timestamp;
     char buffer[50];
-
+    // storing body into a char string char_body
     char *char_body = body;
 
     time(&rawtime);
     timestamp = localtime(&rawtime);
+    // formatting the timestamp and saving it to buffer
     strftime(buffer, 50, "%a %b %d %X %Z %Y", timestamp);
-
+    // printing HTTP response to response
     sprintf(response,
             "%s\n"
             "Date: %s\n"
@@ -73,7 +75,7 @@ int send_response(int fd, char *header, char *content_type, void *body, int cont
             "\n"
             "%s",
             header, buffer, content_length, content_type, char_body);
-
+    // getting the length of the response and storing it
     int response_length = strlen(response);
     // Send it all!
     int rv = send(fd, response, response_length, 0);
@@ -171,18 +173,27 @@ void handle_http_request(int fd, struct cache *cache)
         return;
     }
 
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
-
     // Read the three components of the first request line
+    char method[200];
+    char path[8192];
 
+    sscanf(request, "%s %s", method, path);
     // If GET, handle the get endpoints
-
-    //    Check if it's /d20 and handle that special case
-    //    Otherwise serve the requested file by calling get_file()
-
+    // Check if it's /d20 and handle that special case
+    if (strcmp(method, "GET") == 0 && strcmp(path, "/d20") == 0)
+    {
+        get_d20(fd);
+    }
+    // Otherwise serve the requested file by calling get_file()
+    else
+    {
+        get_file(fd, cache, path);
+    }
     // (Stretch) If POST, handle the post request
+    if (strcmp(method, "GET") != 0 && strcmp(method, "POST") != 0)
+    {
+        resp_404(fd);
+    }
 }
 
 /**
