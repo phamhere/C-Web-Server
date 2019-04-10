@@ -127,6 +127,7 @@ void get_file(int fd, struct cache *cache, char *request_path)
 {
     char filepath[4096];
     struct file_data *filedata;
+    struct cache_entry *entry = cache_get(cache, request_path);
 
     // construct full file path
     snprintf(filepath, sizeof filepath, "%s/%s", SERVER_ROOT, request_path);
@@ -140,6 +141,17 @@ void get_file(int fd, struct cache *cache, char *request_path)
     }
 
     char *mime_type = mime_type_get(filepath);
+    // check to see if request_path is an entry in the cache
+    if (entry != NULL)
+    {
+        send_response(fd, "HTTP/1.1 200 OK", entry->content_type, entry->content, entry->content_length);
+        return;
+    }
+    else
+    {
+        cache_put(cache, request_path, mime_type, filedata->data, filedata->size);
+    }
+
     // send filedata
     send_response(fd, "HTTP/1.1 200 OK", mime_type, filedata->data, filedata->size);
 
