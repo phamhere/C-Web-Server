@@ -145,9 +145,24 @@ void cache_free(struct cache *cache)
  */
 void cache_put(struct cache *cache, char *path, char *content_type, void *content, int content_length)
 {
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+    // allocate a new cache entry with the passed parameters
+    struct cache_entry *new_cache_entry = alloc_entry(path, content_type, content, content_length);
+    // insert the entry at the head of the doubly-linked list
+    dllist_insert_head(cache, new_cache_entry);
+    // store the entry in the hashtable indexed by the entry's path
+    hashtable_put(cache->index, new_cache_entry->path, new_cache_entry);
+
+    if (cache->cur_size > cache->max_size)
+    {
+        // remove cache entry at the tail of the linked list
+        struct cache_entry *old_tail = dllist_remove_tail(cache);
+        // remove the same entry from the hashtable
+        hashtable_delete(cache->index, old_tail->path);
+        // free the cache entry
+        free_entry(old_tail);
+        // ensure the size counter for the number of entries in the cache is correct
+        cache->cur_size--;
+    }
 }
 
 /**
@@ -155,7 +170,15 @@ void cache_put(struct cache *cache, char *path, char *content_type, void *conten
  */
 struct cache_entry *cache_get(struct cache *cache, char *path)
 {
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+    // attempt to find the cache entry pointer by path in the hashtable
+    struct cache_entry *entry = hashtable_get(cache->index, path);
+    // if not found, return null
+    if (entry == NULL)
+    {
+        return NULL;
+    }
+    // move the cache entry to the head of the dll
+    dllist_move_to_head(cache, entry);
+    // return the cache entry pointer
+    return entry;
 }
